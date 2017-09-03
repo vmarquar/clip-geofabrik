@@ -5,9 +5,11 @@
 Written in python 2.7
 Script that batch clips geofabrik osm shapfiles and projects them if needed.
 Example output:
-python batch-clip-v02.py --inputDir=/Users/Valentin/Documents/github/clip-geofabrik/shapefiles --mask=/Users/Valentin/Documents/github/clip-geofabrik/shapefiles/clippingPoly.shp --target_srs=EPSG:31468 --source_srs=EPSG:4326
-
+python batch-clip -h
+python batch-clip.py -in=shapefiles -m=polygon.shp -t_srs=EPSG:1234 -s_srs=EPSG:4236 [-out=output/directory]
+python batch-clip.py --inputDir=/Users/Valentin/Documents/github/clip-geofabrik/shapefiles --mask=/Users/Valentin/Documents/github/clip-geofabrik/shapefiles/clippingPoly.shp --target_srs=EPSG:31468 --source_srs=EPSG:4326
 """
+
 try:
   from osgeo import ogr, osr
   print 'Import of ogr from osgeo worked.  Proceed with clipping shapes with ogr2ogr!\n'
