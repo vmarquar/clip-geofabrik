@@ -2,7 +2,11 @@
 # -*- coding: utf-8 -*-
 
 """
+Written in python 2.7
 Script that batch clips geofabrik osm shapfiles and projects them if needed.
+Example output:
+python batch-clip-v02.py --inputDir=/Users/Valentin/Documents/github/clip-geofabrik/shapefiles --mask=/Users/Valentin/Documents/github/clip-geofabrik/shapefiles/clippingPoly.shp --target_srs=EPSG:31468 --source_srs=EPSG:4326
+
 """
 try:
   from osgeo import ogr, osr
@@ -10,14 +14,68 @@ try:
 except:
   print 'Import of ogr from osgeo failed. Running backup methods.\n\n'
 
-import subprocess, os, sys
+import subprocess, os, sys, argparse
 
-#regexGK = re.compile('(gk)\d+')
-#regexNegative = re.compile('(arc|style|datenblatt|AGB|Allgemeine|General)')
-inputDir = "/Users/Valentin/Documents/github/clip-geofabrik/shapefiles"
-outputDir = '' #Default setting, new files will be in same directory as input files + _clip.shp extension
-clipPolygon = "/Users/Valentin/Documents/github/clip-geofabrik/clippingPolygon_31.shp"
-targetSpatialReference = 'EPSG:31468' #Default: will use projection of clipping layer as target projection
+''' Python command line argument example using argparse module
+Example output:
+./parser.py --server=pyserver --port=8080,443,25,22,21 --keyword=pyisgood
+Server name: [ pyserver ]
+Port: [ 8080 ]
+Port: [ 443 ]
+Port: [ 25 ]
+Port: [ 22 ]
+Port: [ 21 ]
+Keyword assigned: [ pyisgood ]
+'''
+
+import argparse
+
+__author__ = 'Valentin Marquart'
+
+
+def get_args():
+    '''This function parses and return arguments passed in'''
+    # Assign description to the help doc
+    parser = argparse.ArgumentParser(
+        description='Script clips shapefiles in a given folder and reprojects them')
+    # Add arguments
+    parser.add_argument(
+        '-in', '--inputDir', type=str, help='Input directory without a trailing slash', required=True)
+    parser.add_argument(
+        '-m', '--mask', type=str, help='Absolute path to clipping feature', required=True)
+    parser.add_argument(
+        '-t_srs', '--target_srs', type=str, help='The spatial reference, where the clipped data should be projected into', required=True)
+    parser.add_argument(
+        '-s_srs', '--source_srs', type=str, help='The spatial reference, where the clipped data is in', required=True)
+    parser.add_argument(
+        '-out', '--outputDir', type=str, help='Output director, Default is the same as inout directory', required=False, default='')
+    # Array for all arguments passed to script
+    args = parser.parse_args()
+    # Assign args to variables
+    inputDir = args.inputDir
+    clipPolygon = args.mask
+    target_srs = args.target_srs
+    orig_srs = args.source_srs
+    outputDir = args.outputDir
+    # Return all variable values
+    return inputDir, clipPolygon, target_srs, orig_srs, outputDir
+
+# Run get_args()
+# get_args()
+
+# Match return values from get_arguments()
+# and assign to their respective variables
+inputDir, clipPolygon, target_srs, orig_srs, outputDir = get_args()
+
+
+
+# inputDir = "/Users/Valentin/Documents/github/clip-geofabrik/shapefiles"
+# outputDir = '' #Default setting, new files will be in same directory as input files + _clip.shp extension
+# clipPolygon = "/Users/Valentin/Documents/github/clip-geofabrik/shapefiles/clippingPoly.shp"
+# target_srs = 'EPSG:31468' #Default: will use projection of clipping layer as target projection
+# orig_srs = 'EPSG:4326' #WGS 84
+ext = ['.shp','.shx','.dbf','.prj']
+
 
 # getting spatial reference of clipping polygon
 driver = ogr.GetDriverByName('ESRI Shapefile')
@@ -26,12 +84,7 @@ if os.path.isfile(clipPolygon):
     # get spatial reference from shapefile layer
     layer = dataset.GetLayer()
     spatialRefClippingPolygon = layer.GetSpatialRef()
-    print spatialRefClippingPolygon
-    if targetSpatialReference == '':
-        targetSpatialReference = spatialRefClippingPolygon
-        target_srs = os.path.join(os.path.abspath(inputDir),'target_srs.wkt')
-        with open(target_srs, 'w') as file:
-            file.write(targetSpatialReference.ExportToWkt())
+    targetSpatialReference = spatialRefClippingPolygon
 else:
     print "The provided path to the clipping polygon does not point to a valid file! Exiting program..."
     sys.exit()
@@ -41,11 +94,12 @@ else:
 # walk directory and do gdal
 for root, direc, files in os.walk(inputDir):
         for file1 in files:
-            if file1[-4:] == '.shp' and ('_clip' not in file1):
+            if (file1[-4:] == '.shp') and ('_clip' not in file1) and (os.path.join(os.path.abspath(root),file1) != clipPolygon) and ('_reproj' not in file1):
                 # 1. create new filename with _clip
                 clipFile = file1[:-4]+'_clip.shp' # new shapefile name
                 if outputDir == '':
                     clipPath = os.path.join(os.path.abspath(root),clipFile) # new path to clipping shapefile
+                    outputDir = inputDir
                 else:
                     clipPath = os.path.join(os.path.abspath(outputDir),clipFile) # new path to clipping shapefile
 
@@ -59,15 +113,11 @@ for root, direc, files in os.walk(inputDir):
                 spatialRefOrig = layerOrig.GetSpatialRef()
 
                 if not spatialRefOrig == spatialRefClippingPolygon: #if they dont match: reproject clipping polygon
-                    orig_srs = os.path.join(os.path.abspath(inputDir),'orig_srs.wkt')
-                    with open(orig_srs, 'w') as file:
-                        file.write(spatialRefOrig.ExportToWkt())
                     # ogr2ogr -f "ESRI Shapefile" original.shp wgs84.shp -s_srs EPSG:27700 -t_srs EPSG:4326
-                    command = ['ogr2ogr', '-f','ESRI Shapefile', '-overwrite',clipPolygon, clipPolygon[:-4]+'_reproj.shp', '-t_srs', orig_srs]
-                    print "Subprocessing is running following line of code:\n"
-                    print command
+                    command = ['ogr2ogr', '-f','ESRI Shapefile', '-overwrite', clipPolygon[:-4]+'_reproj.shp', clipPolygon, '-t_srs', orig_srs]
+                    print "Subprocessing is reprojecting clipping polygon to source srs:\n{}\n".format(command)
                     subprocess.check_call(command)
-                    print "successfully reprojected clipping polygon"
+                    print "Successfully reprojected clipping polygon!\n"
                     #TODO update spatial reference and file path to reprojected layer file
                     clipPolygon = clipPolygon[:-4]+'_reproj.shp'
                     dataset = driver.Open(os.path.abspath(clipPolygon))
@@ -80,18 +130,23 @@ for root, direc, files in os.walk(inputDir):
                     os.remove(clipPath)
 
                 callArgs = ['ogr2ogr', '-clipsrc', clipPolygon, clipPath, clipOrigPath]
-                print "Subprocessing is clipping shapefile with following arguments:\n"
-                print callArgs
+                print "Subprocessing is clipping shapefile with following arguments:\n{}\n".format(callArgs)
                 subprocess.check_call(callArgs)
+                print "Successfully clipped {} polygon!\n".format(file1)
 
-                #4. reproject all data back to spatial reference of clipping polygon
+
+                # 4. reproject all data back to spatial reference of clipping polygon
                 if not spatialRefOrig == targetSpatialReference:
-                    orig_srs = os.path.join(os.path.abspath(inputDir),'orig_srs.wkt')
-                    with open(orig_srs, 'w') as file:
-                        file.write(spatialRefOrig.ExportToWkt())
-
                     # ogr2ogr -f "ESRI Shapefile" original.shp wgs84.shp -s_srs EPSG:27700 -t_srs EPSG:4326
-                    command = ['ogr2ogr', '-f','ESRI Shapefile', '-overwrite', clipPath, clipPath[:-4]+'_reproj.shp','-s_srs', orig_srs, '-t_srs', target_srs]
-                    print "Subprocessing is running following line of code:\n"
-                    print command
+                    command = ['ogr2ogr', '-f','ESRI Shapefile', '-overwrite', clipPath[:-4]+'_reproj.shp',clipPath, '-t_srs', target_srs]
+                    print "Subprocessing is reprojection shapefiles with following arguments:\n{}\n".format(command)
                     subprocess.check_call(command)
+                    print "Successfully reprojected {0} to {1}\n".format(clipPath,target_srs)
+
+# removing files
+print "Removing temporary files\n\n"
+for root, direc, files in os.walk(outputDir):
+        for file1 in files:
+            if (file1[-9:-4] == '_clip') and (file1[-4:] in ext) or ('_reproj_reproj' in file1):
+                #print "Removing {}".format(file1)
+                os.remove(os.path.join(os.path.abspath(root),file1))
