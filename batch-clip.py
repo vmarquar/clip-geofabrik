@@ -16,20 +16,6 @@ except:
 
 import subprocess, os, sys, argparse
 
-''' Python command line argument example using argparse module
-Example output:
-./parser.py --server=pyserver --port=8080,443,25,22,21 --keyword=pyisgood
-Server name: [ pyserver ]
-Port: [ 8080 ]
-Port: [ 443 ]
-Port: [ 25 ]
-Port: [ 22 ]
-Port: [ 21 ]
-Keyword assigned: [ pyisgood ]
-'''
-
-import argparse
-
 __author__ = 'Valentin Marquart'
 
 
