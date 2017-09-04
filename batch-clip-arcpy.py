@@ -88,7 +88,7 @@ for root, direc, files in os.walk(inputDir):
 
                 if not spatialRefOrig == spatialRefClippingPolygon: #if they dont match: reproject clipping polygon
                     # ogr2ogr -f "ESRI Shapefile" original.shp wgs84.shp -s_srs EPSG:27700 -t_srs EPSG:4326
-                    original_srs = arcpy.SpatialReference(orig_srs.split(':')[1])
+                    original_srs = arcpy.SpatialReference(int(orig_srs.split(':')[1]))
                     arcpy.env.overwriteOutput = True
                     arcpy.Project_management(clipPolygon, clipPolygon[:-4]+'_reproj.shp', original_srs)
 
@@ -109,7 +109,7 @@ for root, direc, files in os.walk(inputDir):
 
                 # 4. reproject all data back to spatial reference of clipping polygon
                 if not spatialRefOrig == targetSpatialReference:
-                    target_srs = arcpy.SpatialReference(target_srs.split(':')[1])
+                    target_srs = arcpy.SpatialReference(int(target_srs.split(':')[1]))
                     arcpy.env.overwriteOutput = True
                     arcpy.Project_management(clipPath, clipPath[:-4]+'_reproj.shp', target_srs)
                     print "Successfully reprojected {0} to {1}\n".format(clipPath,target_srs)
