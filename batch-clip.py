@@ -114,9 +114,6 @@ for root, direc, files in os.walk(inputDir):
 
                 # 3. call ogr2ogr to clip shapefiles
                 # ogr2ogr -clipsrc clipping_polygon.shp output.shp input.shp
-                if os.path.isfile(clipPath):
-                    os.remove(clipPath)
-
                 callArgs = ['ogr2ogr', '-clipsrc', clipPolygon, clipPath, clipOrigPath]
                 print "Subprocessing is clipping shapefile with following arguments:\n{}\n".format(callArgs)
                 subprocess.check_call(callArgs)
@@ -130,6 +127,9 @@ for root, direc, files in os.walk(inputDir):
                     print "Subprocessing is reprojection shapefiles with following arguments:\n{}\n".format(command)
                     subprocess.check_call(command)
                     print "Successfully reprojected {0} to {1}\n".format(clipPath,target_srs)
+                # remove clipping polygon reproj
+                if os.path.isfile(clipPolygon[:-4]+'_reproj.shp'):
+                    os.remove(clipPolygon[:-4]+'_reproj.shp')
 
 # removing files
 print "Removing temporary files\n\n"

@@ -6,7 +6,7 @@ Written in python 2.7
 Script that batch clips geofabrik osm shapfiles and projects them if needed. Optimized for arcpy / ArcGIS Use
 Example output:
 python batch-clip -h
-python batch-clip.py -in=shapefiles -m=polygon.shp -t_srs=EPSG:1234 -s_srs=EPSG:4236 [-out=output/directory]
+python batch-clip.py -in=shapefiles -m=polygon.shp -t_srs=EPSG:4326 -s_srs=EPSG:4326 [-out=output/directory]
 python batch-clip.py --inputDir=/Users/Valentin/Documents/github/clip-geofabrik/shapefiles --mask=/Users/Valentin/Documents/github/clip-geofabrik/shapefiles/clippingPoly.shp --target_srs=EPSG:31468 --source_srs=EPSG:4326
 """
 
@@ -98,10 +98,6 @@ for root, direc, files in os.walk(inputDir):
                     spatialRefClippingPolygon = arcpy.Describe(clipPolygon).spatialReference
 
                 # 3. call ogr2ogr to clip shapefiles
-                # ogr2ogr -clipsrc clipping_polygon.shp output.shp input.shp
-                if os.path.isfile(clipPath):
-                    os.remove(clipPath)
-
                 # Execute Clip
                 arcpy.env.overwriteOutput = True
                 arcpy.Clip_analysis(clipOrigPath, clipPolygon, clipPath, "")
@@ -114,6 +110,7 @@ for root, direc, files in os.walk(inputDir):
                     arcpy.env.overwriteOutput = True
                     arcpy.Project_management(clipPath, clipPath[:-4]+'_reproj.shp', target_srs1)
                     print "Successfully reprojected {0} to {1}\n".format(clipPath,target_srs1)
+                # remove clipping polygon reproj
 
 # removing files
 print "Removing temporary files\n\n"
@@ -122,3 +119,5 @@ for root, direc, files in os.walk(outputDir):
             if (file1[-9:-4] == '_clip') and (file1[-4:] in ext) or ('_reproj_reproj' in file1):
                 #print "Removing {}".format(file1)
                 os.remove(os.path.join(os.path.abspath(root),file1))
+
+#TODO: Remove clipping polygons!
