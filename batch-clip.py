@@ -62,7 +62,7 @@ inputDir, clipPolygon, target_srs, orig_srs, outputDir = get_args()
 # clipPolygon = "/Users/Valentin/Documents/github/clip-geofabrik/shapefiles/clippingPoly.shp"
 # target_srs = 'EPSG:31468' #Default: will use projection of clipping layer as target projection
 # orig_srs = 'EPSG:4326' #WGS 84
-ext = ['.shp','.shx','.dbf','.prj']
+ext = ['.shp','.shx','.dbf','.prj','.sbn','.sbx']
 
 
 # getting spatial reference of clipping polygon
