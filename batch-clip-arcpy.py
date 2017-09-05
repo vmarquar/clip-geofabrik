@@ -103,16 +103,17 @@ for root, direc, files in os.walk(inputDir):
                     os.remove(clipPath)
 
                 # Execute Clip
+                arcpy.env.overwriteOutput = True
                 arcpy.Clip_analysis(clipOrigPath, clipPolygon, clipPath, "")
                 print "Successfully clipped {} polygon!\n".format(file1)
 
 
                 # 4. reproject all data back to spatial reference of clipping polygon
                 if not spatialRefOrig == targetSpatialReference:
-                    target_srs = arcpy.SpatialReference(int(target_srs.split(':')[1]))
+                    target_srs1 = arcpy.SpatialReference(int(target_srs.split(':')[1]))
                     arcpy.env.overwriteOutput = True
-                    arcpy.Project_management(clipPath, clipPath[:-4]+'_reproj.shp', target_srs)
-                    print "Successfully reprojected {0} to {1}\n".format(clipPath,target_srs)
+                    arcpy.Project_management(clipPath, clipPath[:-4]+'_reproj.shp', target_srs1)
+                    print "Successfully reprojected {0} to {1}\n".format(clipPath,target_srs1)
 
 # removing files
 print "Removing temporary files\n\n"
